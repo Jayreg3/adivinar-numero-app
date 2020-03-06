@@ -5,7 +5,8 @@ import {
   StyleSheet,
   Button,
   Alert,
-  ScrollView
+  ScrollView,
+  Dimensions
 } from "react-native";
 
 import NumberContainer from "../components/NumberContainer";
@@ -33,6 +34,12 @@ const renderListItem = (value, numOfRound) => {
 };
 
 const GameScreen = props => {
+  const [availableDeviceWidth, setAvailableDeviceWidth] = useState(
+    Dimensions.get("window").width
+  );
+  const [availableDeviceHeight, setAvailableDeviceHeight] = useState(
+    Dimensions.get("window").height
+  );
   const initialGuess = generateRandomBetween(1, 100, props.userChoice);
   const [currentGuess, setCurrentGuess] = useState(initialGuess);
   const [pastGuesses, setPastGuesses] = useState([initialGuess]);
@@ -40,6 +47,19 @@ const GameScreen = props => {
   const currentHigh = useRef(100);
 
   const { userChoice, onGameOver } = props;
+
+  useEffect(() => {
+    const updateLayout = () => {
+      setAvailableDeviceWidth(Dimensions.get("window").width);
+      setAvailableDeviceHeight(Dimensions.get("window").height);
+    };
+
+    Dimensions.addEventListener("change", updateLayout);
+
+    return () => {
+      Dimensions.removeEventListener("change", updateLayout);
+    };
+  });
 
   useEffect(() => {
     if (currentGuess === props.userChoice) {
@@ -74,25 +94,68 @@ const GameScreen = props => {
     setPastGuesses(curPastGuesses => [nextNumber, ...curPastGuesses]);
   };
 
+  let listContainerStyle = styles.listContainer;
+  if (availableDeviceWidth < 350) {
+    listContainerStyle = styles.listContainerBig;
+  }
+
+  if (availableDeviceHeight < 500) {
+    return (
+      <View style={styles.screen}>
+        <Text>Suposición del ordenador</Text>
+        <View style={styles.control}>
+          <View style={styles.button}>
+            <Button
+              title="Baja"
+              onPress={() => {
+                nextGuessHandler("baja");
+              }}
+            />
+          </View>
+          <NumberContainer>{currentGuess}</NumberContainer>
+          <View style={styles.button}>
+            <Button
+              title="Sube"
+              onPress={() => {
+                nextGuessHandler("sube");
+              }}
+            />
+          </View>
+        </View>
+        <View style={listContainerStyle}>
+          <ScrollView contentContainerStyle={styles.list}>
+            {pastGuesses.map((guess, index) =>
+              renderListItem(guess, pastGuesses.length - index)
+            )}
+          </ScrollView>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.screen}>
       <Text>Suposición del ordenador</Text>
       <NumberContainer>{currentGuess}</NumberContainer>
       <Card style={styles.buttonContainer}>
-        <Button
-          title="Baja"
-          onPress={() => {
-            nextGuessHandler("baja");
-          }}
-        />
-        <Button
-          title="Sube"
-          onPress={() => {
-            nextGuessHandler("sube");
-          }}
-        />
+        <View style={styles.button}>
+          <Button
+            title="Baja"
+            onPress={() => {
+              nextGuessHandler("baja");
+            }}
+          />
+        </View>
+        <View style={styles.button}>
+          <Button
+            title="Sube"
+            onPress={() => {
+              nextGuessHandler("sube");
+            }}
+          />
+        </View>
       </Card>
-      <View style={styles.listContainer}>
+      <View style={listContainerStyle}>
         <ScrollView contentContainerStyle={styles.list}>
           {pastGuesses.map((guess, index) =>
             renderListItem(guess, pastGuesses.length - index)
@@ -112,11 +175,21 @@ const styles = StyleSheet.create({
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 20,
-    width: 300,
-    maxWidth: "80%"
+    marginTop: Dimensions.get("window").height > 600 ? 20 : 5,
+    width: "80%",
+    maxWidth: "95%",
+    minWidth: 300
+    //maxWidth: "80%"
+  },
+  button: {
+    width: Dimensions.get("window").width / 4,
+    backgroundColor: "red"
   },
   listContainer: {
+    flex: 1,
+    width: "60%"
+  },
+  listContainerBig: {
     flex: 1,
     width: "80%"
   },
@@ -132,7 +205,14 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     backgroundColor: "white",
     flexDirection: "row",
-    justifyContent: "space-around"
+    justifyContent: "space-around",
+    width: "60%"
+  },
+  control: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+    width: "80%"
   }
 });
 
